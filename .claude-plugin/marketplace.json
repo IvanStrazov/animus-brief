@@ -1,0 +1,15 @@
+{
+  "name": "animus-brief",
+  "owner": {
+    "name": "Ivan Strazov",
+    "url": "https://github.com/IvanStrazov"
+  },
+  "plugins": [
+    {
+      "name": "animus-brief",
+      "source": "./",
+      "description": "One status brief across all your projects, from animus-journal.",
+      "version": "0.1.0"
+    }
+  ]
+}
