@@ -1,6 +1,6 @@
 {
   "name": "animus-brief",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "One compact status brief across all your Claude Code projects, from animus-journal: what each project is doing, next steps, what went stale, token-limit warnings.",
   "author": {
     "name": "Ivan Strazov",

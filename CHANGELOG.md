@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 — 2026-11-17
+- Same inside-a-journal rule as animus-journal.
+- Skill: where the hidden list lives; run from the session's working folder.
+
 ## 0.2.1 — 2026-11-17
 - Skill: on Windows, take the interpreter from ecosystem.json when `python`/`python3` are Store stubs; forward slashes in paths.
 

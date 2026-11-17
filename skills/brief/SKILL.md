@@ -15,5 +15,5 @@ description: One compact status brief across all projects, from animus-journal â
    - **Limits:** the `[limits]` lines, if the script printed any.
 3. End with one question: which thread to pick up. Do not start work on it before the user answers.
 
-Projects come from Claude Code transcripts plus the current folder. To drop an abandoned project from the brief: `B hide <name>` (`B unhide <name>` to bring it back); its journal stays untouched. `B where` lists the journals scanned.
+Projects come from Claude Code transcripts plus the current folder. To drop an abandoned project from the brief: `B hide <name>` (`B unhide <name>` to bring it back); its journal stays untouched. `B where` lists the journals scanned. The hidden list is kept in `~/.claude/animus/brief.json` (survives restarts) and matches the project folder name. Run `B` from the session's working folder: that folder is always included.
 If the script finds no journals, say that the brief needs animus-journal entries and offer to record the current work.
