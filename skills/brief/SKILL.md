@@ -1,6 +1,6 @@
 ---
 name: brief
-description: One compact status brief across all projects, from animus-journal — what each project is doing, next steps, what went stale, and token-limit warnings. Use on /brief, "what's the status", "what was I doing", "what's pending", "brief me", or at the start of a day.
+description: One compact status brief across all projects at once, from animus-journal — what each project is doing, next steps, what went stale, and token-limit warnings. For the history of one specific task, use journal instead. Use on /brief, "what's the status", "what was I doing", "what's pending", "brief me", at the start of a day, or in Russian — «что по проектам», «статус по всем проектам», «на чём я остановился», «что у меня висит», «дай сводку».
 ---
 
 # Brief

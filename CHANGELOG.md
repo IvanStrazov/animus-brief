@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.3 — 2026-11-17
+- Skill: Russian trigger phrases; scoped to all projects at once (one task's history is journal).
+
 ## 0.2.2 — 2026-11-17
 - Same inside-a-journal rule as animus-journal.
 - Skill: where the hidden list lives; run from the session's working folder.
