@@ -9,7 +9,7 @@
       "name": "animus-brief",
       "source": "./",
       "description": "One status brief across all your projects, from animus-journal.",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }

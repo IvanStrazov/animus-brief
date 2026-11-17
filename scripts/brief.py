@@ -133,7 +133,10 @@ def limits_lines():
         cmd = e.get("plugins", {}).get("animus-limits", {}).get("cmd")
         if not cmd:
             return []
-        r = subprocess.run(shlex.split(cmd, posix=os.name != "nt") + ["check"], capture_output=True,
+        # non-POSIX split keeps Windows backslashes but also keeps the quotes: strip them
+        argv = [t[1:-1] if len(t) > 1 and t[0] == t[-1] == '"' else t
+                for t in shlex.split(cmd, posix=os.name != "nt")]
+        r = subprocess.run(argv + ["check"], capture_output=True,
                            text=True, encoding="utf-8", errors="replace", timeout=60)
         return [l for l in r.stdout.splitlines() if l.strip()]
     except Exception:

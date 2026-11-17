@@ -74,6 +74,16 @@ class BriefTest(unittest.TestCase):
         self.write(self.glob, [(self.now, ["a"], "A", "b")])
         self.assertIn(str(self.glob), self.run_b("where"))
 
+    def test_limits_block_runs_quoted_cmd(self):
+        # ecosystem.json stores cmds as '"<python>" "<script>"' — on Windows the quotes must not reach exec
+        fake = self.tmp / "dir with space" / "limits.py"
+        fake.parent.mkdir()
+        fake.write_text("import sys\nprint('[limits] OVER: x used $9 of $5')\n", encoding="utf-8")
+        (self.tmp / "eco.json").write_text(json.dumps({"version": 1, "plugins": {
+            "animus-limits": {"cmd": f'"{sys.executable}" "{fake}"'}}}), encoding="utf-8")
+        self.write(self.glob, [(self.now, ["a"], "A", "b")])
+        self.assertIn("[limits] OVER: x", self.run_b("show"))
+
     def test_line_cap(self):
         self.write(self.glob, [(self.now - dt.timedelta(minutes=i), [f"t{i}"], f"T{i}", "n") for i in range(30)])
         out = self.run_b("show", "--max-lines", "10")
