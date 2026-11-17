@@ -84,6 +84,25 @@ class BriefTest(unittest.TestCase):
         self.write(self.glob, [(self.now, ["a"], "A", "b")])
         self.assertIn("[limits] OVER: x", self.run_b("show"))
 
+    def test_cwd_dormant_and_hide(self):
+        d = lambda days: self.now - dt.timedelta(days=days)
+        self.write(self.proj / ".journal", [(d(40), ["old"], "Old work", "resume it")])
+        here = self.tmp / "work" / "current"   # no transcript mentions it: it is the current folder
+        here.mkdir(parents=True)
+        self.write(here / ".journal", [(d(1), ["now"], "Fresh work", "ship")])
+        self.env["ANIMUS_BRIEF_FILE"] = str(self.tmp / "brief.json")
+        run = lambda *a: subprocess.run([sys.executable, str(SCRIPT), *a], env=self.env, cwd=str(here),
+                                        capture_output=True, text=True, encoding="utf-8").stdout
+        out = run("show")
+        self.assertIn("■ current — yesterday: Fresh work", out)
+        self.assertIn("Dormant (no entry in 30 days): bot (40d ago)", out)
+        self.assertIn("hidden: bot", run("hide", "bot"))
+        out = run("show")
+        self.assertNotIn("bot (40d ago)", out)
+        self.assertIn("1 hidden project(s)", out)
+        run("unhide", "bot")
+        self.assertIn("bot (40d ago)", run("show"))
+
     def test_line_cap(self):
         self.write(self.glob, [(self.now - dt.timedelta(minutes=i), [f"t{i}"], f"T{i}", "n") for i in range(30)])
         out = self.run_b("show", "--max-lines", "10")

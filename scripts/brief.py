@@ -9,6 +9,7 @@ by their first tag. If animus-limits is installed, its warnings are appended.
 Commands:
   show [--days N] [--stale N] [--max-lines N]   the brief (default: active in 30 days, stale after 7)
   where                                          list the journals found
+  hide NAME / unhide NAME                        leave a project out of the brief (its journal is untouched)
 
 Standard library only, Python 3.9+. No network.
 """
@@ -26,6 +27,7 @@ from pathlib import Path
 CLAUDE_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude").expanduser()
 JOURNAL_GLOBAL = Path(os.environ.get("JOURNAL_GLOBAL_DIR") or Path.home() / "journal").expanduser()
 ECO_FILE = Path(os.environ.get("CLAUDE_ECOSYSTEM_FILE") or CLAUDE_DIR / "ecosystem.json").expanduser()
+CFG_FILE = Path(os.environ.get("ANIMUS_BRIEF_FILE") or CLAUDE_DIR / "animus" / "brief.json").expanduser()
 SCRIPT = Path(__file__).resolve()
 SELF = "animus-brief"
 ENTRY_RE = re.compile(r"^## (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+(.*?)\s+—\s+(.*)$")
@@ -80,7 +82,8 @@ def known_cwds():
 
 def journals():
     seen, out = set(), []
-    for d in [JOURNAL_GLOBAL] + sorted({journal_dir(c) for c in known_cwds()}, key=str):
+    # the current folder counts even if no transcript mentions it yet
+    for d in [JOURNAL_GLOBAL, journal_dir(os.getcwd())] + sorted({journal_dir(c) for c in known_cwds()}, key=str):
         k = str(d).lower()
         if k not in seen and (d / "INDEX.md").is_file():
             seen.add(k)
@@ -161,13 +164,33 @@ def register():
             pass
 
 
+def load_cfg():
+    try:
+        c = json.loads(CFG_FILE.read_text(encoding="utf-8"))
+        return c if isinstance(c, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_cfg(c):
+    CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CFG_FILE.write_text(json.dumps(c, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def cmd_show(a):
     register()
     now = dt.datetime.now()
-    blocks = []
+    hidden = {h.lower() for h in load_cfg().get("hidden", [])}
+    blocks, dormant, n_hidden = [], [], 0
     for j in journals():
-        es = [e for e in entries(j) if (now - e["when"]).days <= a.days]
+        if j != JOURNAL_GLOBAL and j.parent.name.lower() in hidden:
+            n_hidden += 1
+            continue
+        all_es = entries(j)
+        es = [e for e in all_es if (now - e["when"]).days <= a.days]
         if not es:
+            if all_es and j != JOURNAL_GLOBAL:
+                dormant.append((all_es[-1]["when"], j.parent.name))
             continue
         if j == JOURNAL_GLOBAL:  # one block per topic (first tag), skipping topics a newer entry covers
             by_tag = {}
@@ -180,8 +203,17 @@ def cmd_show(a):
                 blocks.append((e["when"], f"~/journal #{e['tag']}", e, []))
         else:
             blocks.append((es[-1]["when"], j.parent.name, es[-1], state_lines(j)))
+    dormant.sort(reverse=True)
+    tail = []
+    if dormant:
+        tail.append(f"Dormant (no entry in {a.days} days): "
+                    + ", ".join(f"{n} ({ago(w, now)})" for w, n in dormant[:6])
+                    + (f" +{len(dormant) - 6} more" if len(dormant) > 6 else "")
+                    + " — `show --days N` for details, `hide NAME` to drop one")
+    if n_hidden:
+        tail.append(f"({n_hidden} hidden project(s): `unhide NAME`)")
     if not blocks:
-        print(f"no journal activity in the last {a.days} days")
+        print("\n".join([f"no journal activity in the last {a.days} days"] + tail))
         return
     blocks.sort(key=lambda b: b[0], reverse=True)
     out = [f"Brief — {now:%Y-%m-%d}, {len(blocks)} active (last {a.days} days)"]
@@ -193,6 +225,7 @@ def cmd_show(a):
         if not state:
             for n in e["next"][:2]:
                 out.append(f"   Next: {clip(n)}")
+    out += tail
     lim = limits_lines()
     if lim:
         out.append("Limits:")
@@ -204,8 +237,19 @@ def cmd_show(a):
 
 
 def cmd_where(_):
+    hidden = {h.lower() for h in load_cfg().get("hidden", [])}
     for j in journals():
-        print(j)
+        print(f"{j}" + ("  (hidden)" if j != JOURNAL_GLOBAL and j.parent.name.lower() in hidden else ""))
+
+
+def cmd_hide(a):
+    c = load_cfg()
+    h = [x for x in c.get("hidden", []) if x.lower() != a.name.lower()]
+    if a.cmd == "hide":
+        h.append(a.name)
+    c["hidden"] = h
+    save_cfg(c)
+    print(f"[brief] {'hidden' if a.cmd == 'hide' else 'shown again'}: {a.name} (hidden now: {', '.join(h) or 'none'})")
 
 
 def main(argv=None):
@@ -217,6 +261,10 @@ def main(argv=None):
     p.add_argument("--max-lines", type=int, default=40)
     p.set_defaults(fn=cmd_show)
     sub.add_parser("where").set_defaults(fn=cmd_where)
+    for c in ("hide", "unhide"):
+        h = sub.add_parser(c)
+        h.add_argument("name", help="project folder name as shown in the brief")
+        h.set_defaults(fn=cmd_hide)
     a = ap.parse_args(argv)
     a.fn(a)
 
